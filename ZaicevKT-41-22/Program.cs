@@ -1,23 +1,37 @@
-var builder = WebApplication.CreateBuilder(args);
+using NLog;
+using NLog.Web;
 
-// Add services to the container.
+var builder = WebApplication.CreateBuilder(args);   
 
-builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+var logger = LogManager.Setup().LoadConfigurationFromAppSettings().GetCurrentClassLogger(); 
 
-var app = builder.Build();
-
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+try
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
+    builder.Logging.ClearProviders();
+    builder.Host.UseNLog();
+
+    builder.Services.AddControllers();
+    builder.Services.AddEndpointsApiExplorer();
+    builder.Services.AddSwaggerGen();
+
+    var app = builder.Build();
+    
+    if (app.Environment.IsDevelopment())
+    {
+        app.UseSwagger();
+        app.UseSwaggerUI();
+
+    }
+    app.UseAuthentication();
+    app.MapControllers();
+    app.Run();
+
 }
-
-app.UseAuthorization();
-
-app.MapControllers();
-
-app.Run();
+catch(Exception ex)
+{
+    logger.Error(ex, "Stoped program because of exception");
+}
+finally
+{
+    LogManager.Shutdown();
+}
